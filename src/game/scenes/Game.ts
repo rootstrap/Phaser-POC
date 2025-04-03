@@ -4,12 +4,14 @@ import { ObjectLocator } from '../utils/ObjectLocator';
 import { GameLocations } from '../config/locations';
 import { Player } from '../sprites/Player';
 import { Enemy } from '../sprites/Enemy';
+import { Wall } from '../sprites/Wall';
 
 export class Game extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
     background: Phaser.GameObjects.Image;
     player: Player;
     enemy: Enemy;
+    walls: Wall[] = [];
 
     private readonly locator: ObjectLocator;
 
@@ -43,6 +45,9 @@ export class Game extends Scene {
         );
         this.enemy = new Enemy(this, enemyPos.x, enemyPos.y, this.player);
 
+        // Create walls
+        this.createWalls();
+
         // Add collision between player and enemy
         this.physics.add.collider(
             this.player as unknown as Phaser.GameObjects.GameObject,
@@ -52,6 +57,18 @@ export class Game extends Scene {
             this
         );
 
+        // Add collisions with walls
+        this.walls.forEach(wall => {
+            this.physics.add.collider(
+                this.player as unknown as Phaser.GameObjects.GameObject,
+                wall as unknown as Phaser.GameObjects.GameObject
+            );
+            this.physics.add.collider(
+                this.enemy as unknown as Phaser.GameObjects.GameObject,
+                wall as unknown as Phaser.GameObjects.GameObject
+            );
+        });
+
         EventBus.emit(EventName.SCENE_READY, this);
     }
 
@@ -60,6 +77,33 @@ export class Game extends Scene {
         this.player?.update();
         // Update enemy movement
         this.enemy?.update();
+    }
+
+    private createWalls() {
+        const wallThickness = 20;
+        const { width, height } = this.scale;
+
+        // Create outer walls
+        this.walls.push(
+            // Top wall
+            new Wall(this, width / 2, wallThickness / 2, width, wallThickness),
+            // Bottom wall
+            new Wall(this, width / 2, height - wallThickness / 2, width, wallThickness),
+            // Left wall
+            new Wall(this, wallThickness / 2, height / 2, wallThickness, height),
+            // Right wall
+            new Wall(this, width - wallThickness / 2, height / 2, wallThickness, height)
+        );
+
+        // Add some internal walls to create a maze-like structure
+        this.walls.push(
+            // Horizontal walls
+            new Wall(this, width / 4, height / 3, width / 3, wallThickness),
+            new Wall(this, (width * 3) / 4, (height * 2) / 3, width / 3, wallThickness),
+            // Vertical walls
+            new Wall(this, width / 3, height / 2, wallThickness, height / 3),
+            new Wall(this, (width * 2) / 3, height / 2, wallThickness, height / 3)
+        );
     }
 
     private handleCollision() {
