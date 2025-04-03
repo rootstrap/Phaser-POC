@@ -25,7 +25,7 @@ export class MainMenu extends Scene {
         const titlePos = this.locator.getPositionFromConfig(this, 
             this.locator.getLocation('MainMenu', 'logo') ?? this.locator.centerObject(this)
         );
-        this.title = this.add.text(titlePos.x, titlePos.y, 'Phaser POC', {
+        this.title = this.add.text(titlePos.x, titlePos.y, 'POC-man', {
             fontFamily: 'Arial Black',
             fontSize: 38,
             color: '#ffffff',

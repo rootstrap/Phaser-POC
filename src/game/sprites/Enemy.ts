@@ -2,7 +2,7 @@ import { Scene } from 'phaser';
 import { Player } from './Player';
 
 export class Enemy extends Phaser.GameObjects.Rectangle {
-    private readonly speed: number = 100;
+    private readonly speed: number = 150;
     private player: Player;
     public body: Phaser.Physics.Arcade.Body;
 
