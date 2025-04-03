@@ -5,6 +5,7 @@ import { GameLocations } from '../config/locations';
 import { Player } from '../sprites/Player';
 import { Enemy } from '../sprites/Enemy';
 import { Wall } from '../sprites/Wall';
+import { Dot } from '../sprites/Dot';
 
 export class Game extends Scene {
     camera: Phaser.Cameras.Scene2D.Camera;
@@ -12,6 +13,9 @@ export class Game extends Scene {
     player: Player;
     enemy: Enemy;
     walls: Wall[] = [];
+    dots: Dot[] = [];
+    score: number = 0;
+    scoreText: Phaser.GameObjects.Text;
 
     private readonly locator: ObjectLocator;
 
@@ -48,6 +52,16 @@ export class Game extends Scene {
         // Create walls
         this.createWalls();
 
+        // Create dots
+        this.createDots();
+
+        // Create score text
+        this.scoreText = this.add.text(16, 16, 'Score: 0', {
+            fontSize: '32px',
+            color: '#fff'
+        });
+        this.scoreText.setScrollFactor(0);
+
         // Add collision between player and enemy
         this.physics.add.collider(
             this.player as unknown as Phaser.GameObjects.GameObject,
@@ -69,6 +83,17 @@ export class Game extends Scene {
             );
         });
 
+        // Add overlap between player and dots
+        this.dots.forEach(dot => {
+            this.physics.add.overlap(
+                this.player as unknown as Phaser.GameObjects.GameObject,
+                dot as unknown as Phaser.GameObjects.GameObject,
+                this.collectDot,
+                undefined,
+                this
+            );
+        });
+
         EventBus.emit(EventName.SCENE_READY, this);
     }
 
@@ -77,6 +102,25 @@ export class Game extends Scene {
         this.player?.update();
         // Update enemy movement
         this.enemy?.update();
+    }
+
+    private createDots() {
+        const { width, height } = this.scale;
+        const spacing = 80; // Space between dots
+        const margin = 60; // Margin from walls
+
+        // Create a grid of dots
+        for (let x = margin; x < width - margin; x += spacing) {
+            for (let y = margin; y < height - margin; y += spacing) {
+                // Check if the dot would intersect with any walls
+                const dot = new Dot(this, x, y);
+                if (!this.walls.some(wall => this.physics.overlap(dot, wall))) {
+                    this.dots.push(dot);
+                } else {
+                    dot.destroy();
+                }
+            }
+        }
     }
 
     private createWalls() {
@@ -104,6 +148,23 @@ export class Game extends Scene {
             new Wall(this, width / 3, height / 2, wallThickness, height / 3),
             new Wall(this, (width * 2) / 3, height / 2, wallThickness, height / 3)
         );
+    }
+
+    private collectDot(_player: Phaser.GameObjects.GameObject | Phaser.Physics.Arcade.Body | Phaser.Tilemaps.Tile, dot: Phaser.GameObjects.GameObject | Phaser.Physics.Arcade.Body | Phaser.Tilemaps.Tile) {
+        const collectibleDot = dot as Dot;
+        collectibleDot.collect();
+        this.score += 10;
+        this.scoreText.setText(`Score: ${this.score}`);
+
+        // Remove the dot from our array
+        this.dots = this.dots.filter(d => d !== collectibleDot);
+
+        // Check if all dots are collected - Victory!
+        if (this.dots.length === 0) {
+            // Save the score to pass it to the Win scene
+            this.registry.set('score', this.score);
+            this.scene.start('Win');
+        }
     }
 
     private handleCollision() {
