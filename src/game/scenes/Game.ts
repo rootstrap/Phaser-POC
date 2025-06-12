@@ -37,6 +37,17 @@ export class Game extends Scene {
         this.background = this.add.image(bgPos.x, bgPos.y, 'background');
         this.background.setAlpha(0.2);
 
+        // Create score text - positioned lower to avoid cropping
+        this.scoreText = this.add.text(20, 80, 'SCORE: 0', {
+            fontSize: '24px',
+            color: '#FFFFFF', 
+            fontFamily: 'Arial, sans-serif',
+            stroke: '#000000',
+            strokeThickness: 4
+        });
+        this.scoreText.setDepth(100);
+        this.scoreText.setScrollFactor(0); // Keep score fixed on screen
+
         // Create player at the center of the screen
         const playerPos = this.locator.getPositionFromConfig(this,
             this.locator.getLocation('Game', 'player') ?? this.locator.centerObject(this)
@@ -54,13 +65,6 @@ export class Game extends Scene {
 
         // Create dots
         this.createDots();
-
-        // Create score text
-        this.scoreText = this.add.text(16, 16, 'Score: 0', {
-            fontSize: '32px',
-            color: '#fff'
-        });
-        this.scoreText.setScrollFactor(0);
 
         // Add collision between player and enemy
         this.physics.add.collider(
@@ -154,7 +158,7 @@ export class Game extends Scene {
         const collectibleDot = dot as Dot;
         collectibleDot.collect();
         this.score += 10;
-        this.scoreText.setText(`Score: ${this.score}`);
+        this.scoreText.setText(`SCORE: ${this.score}`);
 
         // Remove the dot from our array
         this.dots = this.dots.filter(d => d !== collectibleDot);
