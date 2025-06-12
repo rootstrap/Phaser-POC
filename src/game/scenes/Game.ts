@@ -30,12 +30,12 @@ export class Game extends Scene {
         this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height);
 
         this.camera = this.cameras.main;
-        this.camera.setBackgroundColor(0x00ff00);
+        this.camera.setBackgroundColor(0x000033);
 
         // Use ObjectLocator to position background
         const bgPos = this.locator.centerObject(this);
         this.background = this.add.image(bgPos.x, bgPos.y, 'background');
-        this.background.setAlpha(0.5);
+        this.background.setAlpha(0.2);
 
         // Create player at the center of the screen
         const playerPos = this.locator.getPositionFromConfig(this,

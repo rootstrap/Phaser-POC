@@ -1,18 +1,24 @@
 import { Scene } from 'phaser';
 import { Player } from './Player';
 
-export class Enemy extends Phaser.GameObjects.Rectangle {
+export class Enemy extends Phaser.GameObjects.Sprite {
     private readonly speed: number = 150;
     private player: Player;
     public body: Phaser.Physics.Arcade.Body;
 
     constructor(scene: Scene, x: number, y: number, player: Player) {
-        super(scene, x, y, 32, 32, 0xff0000);  // Red color
+        super(scene, x, y, 'ghost');
         this.player = player;
 
-        // Add this rectangle to the scene and enable physics
+        // Add this sprite to the scene and enable physics
         scene.add.existing(this);
         scene.physics.add.existing(this as Phaser.GameObjects.GameObject, false);  // false makes it dynamic
+
+        // Scale the sprite to match the original size
+        const originalSize = 32; // Original size of the red rectangle
+        const imageSize = Math.max(this.width, this.height);
+        const scale = originalSize / imageSize;
+        this.setScale(scale);
 
         // Cast the body to the correct type
         this.body = this.body as Phaser.Physics.Arcade.Body;
