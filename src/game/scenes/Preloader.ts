@@ -1,47 +1,77 @@
 import { Scene } from 'phaser';
+import { ObjectLocator } from '../utils/ObjectLocator';
 
 export class Preloader extends Scene
 {
-    constructor ()
-    {
+    private readonly locator: ObjectLocator;
+
+    constructor() {
         super('Preloader');
+        this.locator = ObjectLocator.getInstance();
     }
 
-    init ()
-    {
-        //  We loaded this image in our Boot Scene, so we can display it here
-        this.add.image(512, 384, 'background');
+    init() {
+        // Center the background
+        const bgPos = this.locator.centerObject(this);
+        this.add.image(bgPos.x, bgPos.y, 'background');
 
-        //  A simple progress bar. This is the outline of the bar.
-        this.add.rectangle(512, 384, 468, 32).setStrokeStyle(1, 0xffffff);
+        // Center the progress bar
+        const barPos = this.locator.centerObject(this);
+        const barWidth = 468;
+        const barHeight = 32;
 
-        //  This is the progress bar itself. It will increase in size from the left based on the % of progress.
-        const bar = this.add.rectangle(512-230, 384, 4, 28, 0xffffff);
+        // Progress bar outline
+        this.add.rectangle(barPos.x, barPos.y, barWidth, barHeight)
+            .setStrokeStyle(1, 0xffffff);
 
-        //  Use the 'progress' event emitted by the LoaderPlugin to update the loading bar
+        // Progress bar fill
+        const bar = this.add.rectangle(
+            barPos.x - (barWidth / 2) + 2,  // Align to left of outline with 2px padding
+            barPos.y,
+            4,  // Initial width
+            barHeight - 4,  // Height with 2px padding on top and bottom
+            0xffffff
+        );
+
+        // Update progress bar width based on loading progress
         this.load.on('progress', (progress: number) => {
-
-            //  Update the progress bar (our bar is 464px wide, so 100% = 464px)
-            bar.width = 4 + (460 * progress);
-
+            bar.width = 4 + ((barWidth - 8) * progress);  // Account for 4px padding on each side
         });
     }
 
-    preload ()
-    {
-        //  Load the assets for the game - Replace with your own assets
+    preload() {
+        //  Load the assets for the game
         this.load.setPath('assets');
 
-        this.load.image('logo', 'logo.png');
-        this.load.image('star', 'star.png');
+        this.load.image('background', 'bg.png');
+        
+        // Reset path to load from src folder
+        this.load.setPath('');
+        
+        // Load Pac-Man frames
+        this.load.image('pacman-frame1', 'src/game/sprites/Player/frame1.png');
+        this.load.image('pacman-frame2', 'src/game/sprites/Player/frame2.png');
+        
+        // Load ghost sprite
+        this.load.image('ghost', 'src/game/sprites/Enemies/ghost.png');
+        
+        // Reset path back to assets for other assets
+        this.load.setPath('assets');
     }
 
-    create ()
-    {
-        //  When all the assets have loaded, it's often worth creating global objects here that the rest of the game can use.
-        //  For example, you can define global animations here, so we can use them in other scenes.
-
-        //  Move to the MainMenu. You could also swap this for a Scene Transition, such as a camera fade.
+    create() {
+        // Create Pac-Man chomping animation
+        this.anims.create({
+            key: 'pacman-chomp',
+            frames: [
+                { key: 'pacman-frame1' },
+                { key: 'pacman-frame2' }
+            ],
+            frameRate: 8,
+            repeat: -1
+        });
+        
+        // Move to the MainMenu
         this.scene.start('MainMenu');
     }
 }
