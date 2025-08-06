@@ -16,6 +16,14 @@ export class Game extends Scene {
     dots: Dot[] = [];
     score: number = 0;
     scoreText: Phaser.GameObjects.Text;
+    
+    // Pause elements
+    private isPaused: boolean = false;
+    private pauseOverlay: Phaser.GameObjects.Rectangle;
+    private pauseText: Phaser.GameObjects.Text;
+    private menuButton: Phaser.GameObjects.Text;
+    private resumeButton: Phaser.GameObjects.Text;
+    private escKey: Phaser.Input.Keyboard.Key;
 
     private readonly locator: ObjectLocator;
 
@@ -30,12 +38,23 @@ export class Game extends Scene {
         this.physics.world.setBounds(0, 0, this.scale.width, this.scale.height);
 
         this.camera = this.cameras.main;
-        this.camera.setBackgroundColor(0x00ff00);
+        this.camera.setBackgroundColor(0x000033);
 
         // Use ObjectLocator to position background
         const bgPos = this.locator.centerObject(this);
         this.background = this.add.image(bgPos.x, bgPos.y, 'background');
-        this.background.setAlpha(0.5);
+        this.background.setAlpha(0.2);
+
+        // Create score text - positioned lower to avoid cropping
+        this.scoreText = this.add.text(20, 80, 'SCORE: 0', {
+            fontSize: '24px',
+            color: '#FFFFFF', 
+            fontFamily: 'Arial, sans-serif',
+            stroke: '#000000',
+            strokeThickness: 4
+        });
+        this.scoreText.setDepth(100);
+        this.scoreText.setScrollFactor(0); // Keep score fixed on screen
 
         // Create player at the center of the screen
         const playerPos = this.locator.getPositionFromConfig(this,
@@ -54,13 +73,6 @@ export class Game extends Scene {
 
         // Create dots
         this.createDots();
-
-        // Create score text
-        this.scoreText = this.add.text(16, 16, 'Score: 0', {
-            fontSize: '32px',
-            color: '#fff'
-        });
-        this.scoreText.setScrollFactor(0);
 
         // Add collision between player and enemy
         this.physics.add.collider(
@@ -93,15 +105,119 @@ export class Game extends Scene {
                 this
             );
         });
+        
+        // Setup pause functionality
+        this.setupPauseSystem();
 
         EventBus.emit(EventName.SCENE_READY, this);
     }
+    
+    setupPauseSystem() {
+        // Register ESC key
+        this.escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+        
+        // Create pause overlay (invisible by default)
+        this.pauseOverlay = this.add.rectangle(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            this.scale.width,
+            this.scale.height,
+            0x000000,
+            0.7
+        );
+        this.pauseOverlay.setVisible(false);
+        this.pauseOverlay.setDepth(200);
+        
+        // Create pause text
+        this.pauseText = this.add.text(
+            this.scale.width / 2,
+            this.scale.height / 3,
+            'PAUSED',
+            {
+                fontSize: '48px',
+                color: '#FFFFFF',
+                fontFamily: 'Arial, sans-serif',
+                stroke: '#000000',
+                strokeThickness: 6
+            }
+        );
+        this.pauseText.setOrigin(0.5);
+        this.pauseText.setVisible(false);
+        this.pauseText.setDepth(201);
+        
+        // Create menu button
+        this.menuButton = this.add.text(
+            this.scale.width / 2,
+            this.scale.height / 2,
+            'MAIN MENU',
+            {
+                fontSize: '32px',
+                color: '#FFFF00',
+                fontFamily: 'Arial, sans-serif',
+                stroke: '#000000',
+                strokeThickness: 4
+            }
+        );
+        this.menuButton.setOrigin(0.5);
+        this.menuButton.setVisible(false);
+        this.menuButton.setDepth(201);
+        this.menuButton.setInteractive({ useHandCursor: true });
+        this.menuButton.on('pointerover', () => this.menuButton.setScale(1.1));
+        this.menuButton.on('pointerout', () => this.menuButton.setScale(1));
+        this.menuButton.on('pointerdown', () => this.scene.start('MainMenu'));
+        
+        // Create resume button
+        this.resumeButton = this.add.text(
+            this.scale.width / 2,
+            this.scale.height / 2 + 60,
+            'RESUME',
+            {
+                fontSize: '32px',
+                color: '#FFFFFF',
+                fontFamily: 'Arial, sans-serif',
+                stroke: '#000000',
+                strokeThickness: 4
+            }
+        );
+        this.resumeButton.setOrigin(0.5);
+        this.resumeButton.setVisible(false);
+        this.resumeButton.setDepth(201);
+        this.resumeButton.setInteractive({ useHandCursor: true });
+        this.resumeButton.on('pointerover', () => this.resumeButton.setScale(1.1));
+        this.resumeButton.on('pointerout', () => this.resumeButton.setScale(1));
+        this.resumeButton.on('pointerdown', () => this.togglePause());
+    }
+    
+    togglePause() {
+        this.isPaused = !this.isPaused;
+        
+        // Update pause UI visibility
+        this.pauseOverlay.setVisible(this.isPaused);
+        this.pauseText.setVisible(this.isPaused);
+        this.menuButton.setVisible(this.isPaused);
+        this.resumeButton.setVisible(this.isPaused);
+        
+        // Pause/resume game physics
+        if (this.isPaused) {
+            this.physics.pause();
+        } else {
+            this.physics.resume();
+        }
+    }
 
     update() {
-        // Update player movement
-        this.player?.update();
-        // Update enemy movement
-        this.enemy?.update();
+        // Check for ESC key to pause/unpause
+        if (Phaser.Input.Keyboard.JustDown(this.escKey as Phaser.Input.Keyboard.Key)) {
+            this.togglePause();
+        }
+        
+        // Only update game objects if not paused
+        if (!this.isPaused) {
+            // Update player movement
+            this.player?.update();
+            // Update enemy movement
+            this.enemy?.update();
+        }
     }
 
     private createDots() {
@@ -154,7 +270,7 @@ export class Game extends Scene {
         const collectibleDot = dot as Dot;
         collectibleDot.collect();
         this.score += 10;
-        this.scoreText.setText(`Score: ${this.score}`);
+        this.scoreText.setText(`SCORE: ${this.score}`);
 
         // Remove the dot from our array
         this.dots = this.dots.filter(d => d !== collectibleDot);
