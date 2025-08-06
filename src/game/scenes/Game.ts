@@ -284,6 +284,8 @@ export class Game extends Scene {
     }
 
     private handleCollision() {
+        // Save the score to pass it to the GameOver scene
+        this.registry.set('score', this.score);
         // End the game when player collides with enemy
         this.scene.start('GameOver');
     }
